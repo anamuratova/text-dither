@@ -14,6 +14,15 @@ export function hash(i: number): number {
   return s - Math.floor(s);
 }
 
+// lo = 2nd percentile, hi = max(98th percentile, lo + 1e-6) (addendum section 16)
+export function autoLevels(darks: Float32Array): [lo: number, hi: number] {
+  if (darks.length === 0) return [0, 1];
+  const sorted = Float32Array.from(darks).sort();
+  const lo = sorted[Math.floor(0.02 * (sorted.length - 1))];
+  const hi = Math.max(sorted[Math.floor(0.98 * (sorted.length - 1))], lo + 1e-6);
+  return [lo, hi];
+}
+
 export function computeLayout(
   lum: Float32Array,
   cols: number,
@@ -31,6 +40,20 @@ export function computeLayout(
   }
 
   const { repeat, invert, gamma, sizeResponse, weightResponse, fadeFloor, warp, whiteCutoff } = params;
+
+  // first pass: raw darkness for every cell, then optional auto-levels remap
+  const darks = new Float32Array(cols * rows);
+  for (let p = 0; p < darks.length; p++) {
+    const lum01 = invert ? 1 - lum[p] : lum[p];
+    darks[p] = clamp(1 - lum01, 0, 1) ** gamma;
+  }
+  if (params.normalize) {
+    const [lo, hi] = autoLevels(darks);
+    for (let p = 0; p < darks.length; p++) {
+      darks[p] = clamp((darks[p] - lo) / (hi - lo), 0, 1);
+    }
+  }
+
   const glyphs: Glyph[] = [];
   let i = 0;
 
@@ -44,9 +67,7 @@ export function computeLayout(
 
       if (ch === ' ') continue;
 
-      let lum01 = lum[r * cols + c];
-      if (invert) lum01 = 1 - lum01;
-      const dark = clamp(1 - lum01, 0, 1) ** gamma;
+      const dark = darks[r * cols + c];
       if (dark <= whiteCutoff) continue;
 
       const scale = lerp(1 - sizeResponse * 0.85, 1 + sizeResponse * 0.55, dark);
@@ -57,6 +78,7 @@ export function computeLayout(
 
       glyphs.push({
         ch,
+        dark,
         x: (c + 0.5) * cellW,
         y: (r + 0.62) * cellH + yJitter,
         fontSize: cellH * 0.95 * scale,

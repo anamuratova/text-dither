@@ -9,10 +9,12 @@ export interface DitherParams {
   fadeFloor: number;      // 0..0.6, default 0.14
   warp: number;           // 0..1, default 0.15
   whiteCutoff: number;    // 0..0.6, default 0
+  normalize: boolean;     // default true; auto-levels remap of darks (addendum section 16)
 }
 
 export interface Glyph {
   ch: string;
+  dark: number;           // 0..1 post-normalization darkness; tonal source for band assignment
   x: number; y: number;   // center position, canvas units
   fontSize: number;
   weight: number;         // 100..900, continuous (variable font), rounded to 1
@@ -38,4 +40,5 @@ export const DEFAULT_PARAMS: DitherParams = {
   fadeFloor: 0.14,
   warp: 0.15,
   whiteCutoff: 0,
+  normalize: true,
 };

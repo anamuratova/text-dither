@@ -4,9 +4,9 @@ import type { Glyph } from '../src/core/types';
 import { toSVG } from '../src/render/svg';
 
 const glyphs: Glyph[] = [
-  { ch: 'a', x: 10, y: 20, fontSize: 12, weight: 400, alpha: 0.5, rot: 0.2 },
-  { ch: '<', x: 30, y: 20, fontSize: 14, weight: 700, alpha: 1, rot: 0.1 },
-  { ch: 'z', x: 50, y: 40, fontSize: 9, weight: 100, alpha: 0.14, rot: 0 },
+  { ch: 'a', dark: 0.5, x: 10, y: 20, fontSize: 12, weight: 400, alpha: 0.5, rot: 0.2 },
+  { ch: '<', dark: 0.9, x: 30, y: 20, fontSize: 14, weight: 700, alpha: 1, rot: 0.1 },
+  { ch: 'z', dark: 0.1, x: 50, y: 40, fontSize: 9, weight: 100, alpha: 0.14, rot: 0 },
 ];
 
 describe('toSVG', () => {

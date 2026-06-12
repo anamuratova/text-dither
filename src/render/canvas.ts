@@ -1,10 +1,19 @@
 import { computeLayout } from '../core/layout';
 import { luminanceGrid } from '../core/sampler';
 import type { DitherParams, LayoutResult } from '../core/types';
+import { bandFor, type PlotProfile } from '../plot/bands';
+import { printableWidthMm } from '../plot/plotSvg';
+import { glyphStrokes } from '../plot/strokes';
 
 const BG = '#f4f2ec';
 const INK = '#15151a';
 const MAX_LONG_SIDE = 1600;
+
+export interface PlotPreview {
+  profile: PlotProfile;
+  pageWidthMm: number;
+  marginMm: number;
+}
 
 export type ImageSource = CanvasImageSource & { width: number; height: number };
 
@@ -25,6 +34,7 @@ export class CanvasRenderer {
   private ctx: CanvasRenderingContext2D;
   private source: ImageSource | null = null;
   private params: DitherParams | null = null;
+  private plotPreview: PlotPreview | null = null;
   private rafId = 0;
   lastLayout: LayoutResult | null = null;
   lastWidth = 0;
@@ -42,8 +52,9 @@ export class CanvasRenderer {
   }
 
   // Coalesce all render requests into a single requestAnimationFrame.
-  render(params: DitherParams): void {
+  render(params: DitherParams, plotPreview: PlotPreview | null = null): void {
     this.params = params;
+    this.plotPreview = plotPreview;
     if (this.rafId) return;
     this.rafId = requestAnimationFrame(() => {
       this.rafId = 0;
@@ -92,6 +103,13 @@ export class CanvasRenderer {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, width, height);
+
+    if (this.plotPreview) {
+      this.drawPlotPreview(layout, width);
+      this.canvas.dispatchEvent(new CustomEvent('rendered'));
+      return;
+    }
+
     ctx.fillStyle = INK;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -111,5 +129,29 @@ export class CanvasRenderer {
     }
     ctx.globalAlpha = 1;
     this.canvas.dispatchEvent(new CustomEvent('rendered'));
+  }
+
+  // Band-model preview: same glyphStrokes geometry the plot SVG exports -
+  // single source of truth, what's on screen is what plots.
+  private drawPlotPreview(layout: LayoutResult, width: number): void {
+    const { profile, pageWidthMm, marginMm } = this.plotPreview!;
+    const pxPerMm = width / printableWidthMm(pageWidthMm, marginMm);
+    const ctx = this.ctx;
+    ctx.lineWidth = profile.penWidthMm * pxPerMm;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = 1;
+
+    for (const g of layout.glyphs) {
+      const band = bandFor(g.dark, profile);
+      if (!band) continue;
+      ctx.strokeStyle = band.color;
+      for (const pl of glyphStrokes(g, band, profile.penWidthMm, pxPerMm)) {
+        ctx.beginPath();
+        ctx.moveTo(pl.pts[0][0], pl.pts[0][1]);
+        for (let i = 1; i < pl.pts.length; i++) ctx.lineTo(pl.pts[i][0], pl.pts[i][1]);
+        ctx.stroke();
+      }
+    }
   }
 }

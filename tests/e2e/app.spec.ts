@@ -111,6 +111,29 @@ test('13. Save SVG downloads a file starting with <svg', async ({ page }) => {
   expect(content.trimStart().startsWith('<svg')).toBe(true);
 });
 
+test('plot-9. Save plot SVG downloads a layered stroke SVG', async ({ page }) => {
+  await waitForPaint(page);
+  const downloadPromise = page.waitForEvent('download');
+  await page.click('#btn-plot-svg');
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(chunk as Buffer);
+  const content = Buffer.concat(chunks).toString('utf8');
+  expect(content.trimStart().startsWith('<svg')).toBe(true);
+  expect(content).toContain('inkscape:groupmode="layer"');
+  await expect(page.locator('#plot-stats')).toContainText('glyphs');
+});
+
+test('plot-10. plot preview toggle changes pixels and restores on toggle back', async ({ page }) => {
+  await waitForPaint(page);
+  const original = await pixelHash(page);
+  await page.check('#chk-plot-preview');
+  await expect.poll(() => pixelHash(page), { timeout: 10_000 }).not.toBe(original);
+  await page.uncheck('#chk-plot-preview');
+  await expect.poll(() => pixelHash(page), { timeout: 10_000 }).toBe(original);
+});
+
 test('14. typing new text updates the canvas within 500 ms', async ({ page }) => {
   await waitForPaint(page);
   const before = await pixelHash(page);

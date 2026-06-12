@@ -41,6 +41,34 @@ body {
   color: #2440ff;
 }
 
+#controls h2 {
+  margin: 22px 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid #33333d;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8a8a96;
+}
+
+select,
+input[type='number'] {
+  width: 100%;
+  background: #111116;
+  color: #d8d8de;
+  border: 1px solid #33333d;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font: inherit;
+}
+
+.stats {
+  margin-top: 8px;
+  min-height: 1.2em;
+  color: #8a8a96;
+}
+
 .field {
   margin-bottom: 12px;
 }

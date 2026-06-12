@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "optimize:example": "vpype read examples/plot-example.svg linemerge --tolerance 0.05mm linesort linesimplify --tolerance 0.02mm write --page-size a3 --center examples/plot-example-optimized.svg"
   },
   "license": "MIT",
   "devDependencies": {

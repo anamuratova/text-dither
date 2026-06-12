@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clamp, computeLayout, hash, lerp } from '../src/core/layout';
+import { autoLevels, clamp, computeLayout, hash, lerp } from '../src/core/layout';
 import type { DitherParams } from '../src/core/types';
 
 const BASE: DitherParams = {
@@ -13,6 +13,7 @@ const BASE: DitherParams = {
   fadeFloor: 0.14,
   warp: 0.15,
   whiteCutoff: 0,
+  normalize: false, // criteria 1-8 pin raw section-3 behavior; auto-levels tested separately
 };
 
 function grid(cols: number, rows: number, fill: number): Float32Array {
@@ -130,5 +131,47 @@ describe('computeLayout', () => {
     const res = computeLayout(grid(2, 2, 0.5), 2, 2, 100, 100, { ...BASE, text: '' });
     expect(res.glyphs).toEqual([]);
     expect(res.consumed).toBe(0);
+  });
+});
+
+describe('auto-levels (addendum section 16)', () => {
+  it('autoLevels returns 2nd/98th percentiles with a degenerate-range guard', () => {
+    const darks = new Float32Array(100);
+    for (let i = 0; i < 100; i++) darks[i] = i / 99;
+    const [lo, hi] = autoLevels(darks);
+    expect(lo).toBeCloseTo(0.0101, 3);
+    expect(hi).toBeCloseTo(0.9797, 3);
+    const [clo, chi] = autoLevels(new Float32Array(50).fill(0.4));
+    expect(chi).toBeGreaterThan(clo);
+    expect(chi - clo).toBeCloseTo(1e-6, 9);
+  });
+
+  it('(a) raw darks spanning only [0, 0.6] populate the top band when normalize=true', () => {
+    const cols = 20;
+    const rows = 5;
+    const lum = new Float32Array(cols * rows);
+    // gamma=1 makes dark = 1 - lum; lum in [0.4, 1] => raw dark in [0, 0.6]
+    for (let p = 0; p < lum.length; p++) lum[p] = 0.4 + 0.6 * (p / (lum.length - 1));
+    const params = { ...BASE, text: 'abcdefghij', repeat: true, gamma: 1, normalize: true };
+    const res = computeLayout(lum, cols, rows, 1240, 500, params);
+    const maxDark = Math.max(...res.glyphs.map((g) => g.dark));
+    expect(maxDark).toBeGreaterThan(0.82); // reaches the heaviest band of both profiles
+  });
+
+  it('(b) normalize=false reproduces raw section-3 darkness exactly', () => {
+    const lum = Float32Array.from([0.3, 0.85]);
+    const params = { ...BASE, text: 'ab', repeat: true, normalize: false };
+    const res = computeLayout(lum, 2, 1, 124, 100, params);
+    expect(res.glyphs[0].dark).toBeCloseTo(0.7 ** 1.4, 6);
+    expect(res.glyphs[1].dark).toBeCloseTo(0.15 ** 1.4, 6);
+  });
+
+  it('(c) constant-luminance grid does not divide by zero', () => {
+    const params = { ...BASE, text: 'abcd', repeat: true, normalize: true };
+    const res = computeLayout(grid(4, 4, 0.5), 4, 4, 248, 400, params);
+    // degenerate range remaps every dark to exactly 0 (not NaN), so with
+    // whiteCutoff=0 every cell is consumed but none is drawn
+    expect(res.consumed).toBe(16);
+    expect(res.glyphs.length).toBe(0);
   });
 });

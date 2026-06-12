@@ -1,0 +1,11 @@
+{
+  "name": "text-dither",
+  "version": "0.1.0",
+  "description": "Text dithering",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

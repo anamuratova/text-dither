@@ -1,0 +1,153 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  background: #e9e6dd;
+  color: #15151a;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: 100%;
+}
+
+#controls {
+  background: #1c1c22;
+  color: #d8d8de;
+  padding: 18px 16px;
+  overflow-y: auto;
+}
+
+#controls h1 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+#controls h1::after {
+  content: '_';
+  color: #2440ff;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #8a8a96;
+}
+
+.readout {
+  color: #2440ff;
+  filter: brightness(1.6);
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  background: #111116;
+  color: #d8d8de;
+  border: 1px solid #33333d;
+  border-radius: 4px;
+  padding: 8px;
+  font: inherit;
+}
+
+textarea:focus,
+input[type='range']:focus-visible,
+button:focus-visible {
+  outline: 2px solid #2440ff;
+  outline-offset: 1px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+input[type='checkbox'] {
+  accent-color: #2440ff;
+}
+
+input[type='range'] {
+  width: 100%;
+  accent-color: #2440ff;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+button {
+  background: #111116;
+  color: #d8d8de;
+  border: 1px solid #33333d;
+  border-radius: 4px;
+  padding: 8px 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: #2440ff;
+  color: #fff;
+}
+
+#stage-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: auto;
+}
+
+#stage {
+  width: 100%;
+  max-width: 960px;
+  height: auto;
+  background: #f4f2ec;
+  box-shadow: 0 2px 24px rgba(21, 21, 26, 0.18);
+}
+
+#drop-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(36, 64, 255, 0.85);
+  color: #fff;
+  font-size: 28px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  z-index: 10;
+  pointer-events: none;
+}
+
+#drop-overlay.visible {
+  display: flex;
+}

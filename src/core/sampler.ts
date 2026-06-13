@@ -14,20 +14,42 @@ function getCtx(cols: number, rows: number): CanvasRenderingContext2D {
   return cachedCtx;
 }
 
+export interface DrawRect { dx: number; dy: number; dw: number; dh: number; }
+
+// Cover-fit the source into the canvas's PHYSICAL rectangle (width x height),
+// then express the draw rect in the cols x rows cell buffer. The cells are not
+// square (cellW = 0.62*cellH), so a cover-fit done directly in cell units would
+// crop the image and stretch it back to the canvas; fitting in physical space
+// keeps the sampled image at the same proportions it is displayed at.
+export function coverRect(
+  cols: number,
+  rows: number,
+  width: number,
+  height: number,
+  sw: number,
+  sh: number,
+): DrawRect {
+  const scale = Math.max(width / sw, height / sh);
+  const pw = sw * scale; // physical px
+  const ph = sh * scale;
+  const dw = (pw * cols) / width; // -> cell-buffer units
+  const dh = (ph * rows) / height;
+  return { dx: (cols - dw) / 2, dy: (rows - dh) / 2, dw, dh };
+}
+
 export function luminanceGrid(
   source: CanvasImageSource & { width: number; height: number },
   cols: number,
   rows: number,
+  width: number,
+  height: number,
 ): Float32Array {
   const ctx = getCtx(cols, rows);
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, cols, rows);
 
-  // cover fit: scale to fill, center-crop the overflow axis
-  const scale = Math.max(cols / source.width, rows / source.height);
-  const dw = source.width * scale;
-  const dh = source.height * scale;
-  ctx.drawImage(source, (cols - dw) / 2, (rows - dh) / 2, dw, dh);
+  const { dx, dy, dw, dh } = coverRect(cols, rows, width, height, source.width, source.height);
+  ctx.drawImage(source, dx, dy, dw, dh);
 
   const data = ctx.getImageData(0, 0, cols, rows).data;
   const lum = new Float32Array(cols * rows);

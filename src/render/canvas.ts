@@ -93,7 +93,7 @@ export class CanvasRenderer {
     const cols = Math.max(1, Math.floor(width / cellW));
     const rows = Math.max(1, Math.floor(height / cellH));
 
-    const lum = luminanceGrid(source, cols, rows);
+    const lum = luminanceGrid(source, cols, rows, width, height);
     const layout = computeLayout(lum, cols, rows, width, height, params);
     this.lastLayout = layout;
     this.lastWidth = width;

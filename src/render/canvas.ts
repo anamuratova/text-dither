@@ -38,6 +38,7 @@ export class CanvasRenderer {
   private params: DitherParams | null = null;
   private page: PageGeometry = { widthMm: 210, heightMm: 297, marginMm: 10 };
   private previewProfile: PlotProfile | null = null;
+  private zoom: 'fit' | 'actual' = 'fit';
   private rafId = 0;
   lastLayout: LayoutResult | null = null;
   lastWidth = 0;
@@ -55,10 +56,16 @@ export class CanvasRenderer {
   }
 
   // Coalesce all render requests into a single requestAnimationFrame.
-  render(params: DitherParams, page: PageGeometry, previewProfile: PlotProfile | null = null): void {
+  render(
+    params: DitherParams,
+    page: PageGeometry,
+    previewProfile: PlotProfile | null = null,
+    zoom: 'fit' | 'actual' = 'fit',
+  ): void {
     this.params = params;
     this.page = page;
     this.previewProfile = previewProfile;
+    this.zoom = zoom;
     if (this.rafId) return;
     this.rafId = requestAnimationFrame(() => {
       this.rafId = 0;
@@ -90,8 +97,16 @@ export class CanvasRenderer {
     }
     const displayW = Math.min(availW, availH / paperAspect);
     const displayH = displayW * paperAspect;
-    this.canvas.style.width = `${displayW}px`;
-    this.canvas.style.height = `${displayH}px`;
+    // The LAYOUT basis stays the host-fit width (so the plot is identical in
+    // both zoom modes); only the displayed size changes. At 100% the printable
+    // page area is shown at actual mm (browser's 96px/inch reference).
+    if (this.zoom === 'actual') {
+      this.canvas.style.width = `${printW}mm`;
+      this.canvas.style.height = `${printH}mm`;
+    } else {
+      this.canvas.style.width = `${displayW}px`;
+      this.canvas.style.height = `${displayH}px`;
+    }
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let width = displayW * dpr;

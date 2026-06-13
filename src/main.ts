@@ -53,7 +53,7 @@ function previewProfile(): PlotProfile | null {
   return state.getPlot().preview ? activeProfile() : null;
 }
 
-const rerender = () => renderer.render(state.get(), page(), previewProfile());
+const rerender = () => renderer.render(state.get(), page(), previewProfile(), state.getPlot().zoom);
 state.subscribe(rerender);
 
 async function loadFile(file: File): Promise<void> {

@@ -191,6 +191,18 @@ function buildPlotterSection(root: HTMLElement, state: State, actions: ControlAc
   previewLabel.append(previewInput, document.createTextNode('plot preview'));
   root.appendChild(previewLabel);
 
+  const zoomInput = document.createElement('input');
+  zoomInput.type = 'checkbox';
+  zoomInput.id = 'chk-actual-size';
+  zoomInput.checked = plot.zoom === 'actual';
+  zoomInput.addEventListener('change', () =>
+    state.setPlot({ zoom: zoomInput.checked ? 'actual' : 'fit' }),
+  );
+  const zoomLabel = document.createElement('label');
+  zoomLabel.className = 'check-row';
+  zoomLabel.append(zoomInput, document.createTextNode('100% (actual size)'));
+  root.appendChild(zoomLabel);
+
   const buttons = document.createElement('div');
   buttons.className = 'buttons';
   buttons.append(button('Save plot SVG', 'btn-plot-svg', actions.onSavePlotSVG));

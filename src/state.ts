@@ -3,6 +3,7 @@ import { DEFAULT_PARAMS } from './core/types';
 
 export type PaperSize = 'A4' | 'A3' | 'A2' | 'A1' | 'custom';
 export type Orientation = 'portrait' | 'landscape';
+export type ZoomMode = 'fit' | 'actual';
 
 export interface PlotSettings {
   profileName: 'gray-inks' | 'single-pen';
@@ -12,6 +13,7 @@ export interface PlotSettings {
   customHeightMm: number;
   marginMm: number;
   preview: boolean;
+  zoom: ZoomMode;
 }
 
 export const DEFAULT_PLOT: PlotSettings = {
@@ -22,6 +24,7 @@ export const DEFAULT_PLOT: PlotSettings = {
   customHeightMm: 210,
   marginMm: 10,
   preview: false,
+  zoom: 'fit',
 };
 
 // ISO A-series portrait dimensions in mm.

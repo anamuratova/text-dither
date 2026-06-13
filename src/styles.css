@@ -147,8 +147,10 @@ button:hover {
 
 #stage-wrap {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* `safe` keeps an oversized canvas (100% zoom / large papers) scrollable
+     instead of clipping its top-left when it overflows the container */
+  align-items: safe center;
+  justify-content: safe center;
   padding: 24px;
   overflow: auto;
 }

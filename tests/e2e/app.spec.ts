@@ -158,6 +158,25 @@ test('plot-11. selecting a paper size reshapes the canvas and the plot page', as
   expect(content).toMatch(/ width="297mm" height="420mm"/);
 });
 
+test('plot-12. 100% (actual size) shows the page at physical mm without changing the plot', async ({ page }) => {
+  await waitForPaint(page);
+  const internalBefore = await page.evaluate(() => document.querySelector<HTMLCanvasElement>('#stage')!.width);
+
+  await page.check('#chk-actual-size');
+  // A4 portrait printable area = (210-2*10) x (297-2*10) mm
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector<HTMLCanvasElement>('#stage')!.style.width))
+    .toBe('190mm');
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('#stage')!.style.height)).toBe('277mm');
+  // the plot (internal pixel buffer) must be unchanged - only presentation scales
+  expect(await page.evaluate(() => document.querySelector<HTMLCanvasElement>('#stage')!.width)).toBe(internalBefore);
+
+  await page.uncheck('#chk-actual-size');
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector<HTMLCanvasElement>('#stage')!.style.width.endsWith('px')))
+    .toBe(true);
+});
+
 test('14. typing new text updates the canvas within 500 ms', async ({ page }) => {
   await waitForPaint(page);
   const before = await pixelHash(page);

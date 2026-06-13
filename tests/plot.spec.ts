@@ -4,7 +4,7 @@ import { computeLayout } from '../src/core/layout';
 import type { DitherParams, Glyph } from '../src/core/types';
 import { bandFor, GRAY_INKS, SINGLE_PEN } from '../src/plot/bands';
 import { glyphPolylines } from '../src/plot/hershey';
-import { printableWidthMm, toPlotSVG, type PlotOptions } from '../src/plot/plotSvg';
+import { printableMm, toPlotSVG, type PlotOptions } from '../src/plot/plotSvg';
 import { glyphStrokes } from '../src/plot/strokes';
 
 function makeGlyph(over: Partial<Glyph>): Glyph {
@@ -19,7 +19,8 @@ const CENTRAL: Glyph[] = [
   makeGlyph({ ch: 'd', dark: 0.9, x: 180, y: 280 }),
 ];
 
-const OPTS: PlotOptions = { widthMm: 210, profile: SINGLE_PEN, marginMm: 10 };
+// square printable area (210-20 = 190 mm) to match the square test canvas
+const OPTS: PlotOptions = { widthMm: 210, heightMm: 210, profile: SINGLE_PEN, marginMm: 10 };
 const W = 400;
 const H = 400;
 
@@ -118,7 +119,8 @@ describe('toPlotSVG', () => {
     expect(height).not.toBeNull();
     const pageW = Number(width![1]);
     const pageH = Number(height![1]);
-    expect(pageW).toBe(210);
+    expect(pageW).toBe(210); // paper width
+    expect(pageH).toBe(210); // paper height, now explicit (not derived from canvas)
     const coords = [...svg.matchAll(/[ML](-?[0-9.]+) (-?[0-9.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
     expect(coords.length).toBeGreaterThan(0);
     for (const [x, y] of coords) {
@@ -163,6 +165,19 @@ describe('toPlotSVG', () => {
     expect(plain.includes('data-i')).toBe(false);
   });
 
+  it('page width/height match the requested paper size exactly (A3 portrait)', () => {
+    // page dimensions come from opts, not the canvas
+    const svg = toPlotSVG(CENTRAL, 400, 566, {
+      widthMm: 297,
+      heightMm: 420,
+      profile: SINGLE_PEN,
+      marginMm: 10,
+    });
+    expect(svg).toMatch(/ width="297mm" height="420mm"/);
+    expect(svg).toContain('viewBox="0 0 297 420"');
+    expect(svg).toContain('page: 297x420 mm');
+  });
+
   it('8. determinism: identical inputs produce byte-identical SVG', () => {
     const a = toPlotSVG(CENTRAL, W, H, OPTS);
     const b = toPlotSVG(CENTRAL, W, H, OPTS);
@@ -173,10 +188,10 @@ describe('toPlotSVG', () => {
   });
 
   it('degenerate printable area (margin >= half page width) stays finite and valid', () => {
-    expect(printableWidthMm(100, 50)).toBe(1);
-    expect(printableWidthMm(100, 60)).toBe(1);
+    expect(printableMm(100, 50)).toBe(1);
+    expect(printableMm(100, 60)).toBe(1);
     for (const marginMm of [50, 60]) {
-      const svg = toPlotSVG(CENTRAL, W, H, { widthMm: 100, profile: SINGLE_PEN, marginMm });
+      const svg = toPlotSVG(CENTRAL, W, H, { widthMm: 100, heightMm: 100, profile: SINGLE_PEN, marginMm });
       expect(XMLValidator.validate(svg)).toBe(true);
       expect(svg.includes('Infinity')).toBe(false);
       expect(svg.includes('NaN')).toBe(false);

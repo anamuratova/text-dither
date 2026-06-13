@@ -2,9 +2,9 @@ import './styles.css';
 import { makeRose } from './core/rose';
 import { bandFor, GRAY_INKS, SINGLE_PEN, type PlotProfile } from './plot/bands';
 import { toPlotSVG } from './plot/plotSvg';
-import { CanvasRenderer, type ImageSource, type PlotPreview } from './render/canvas';
+import { CanvasRenderer, type ImageSource, type PageGeometry } from './render/canvas';
 import { toSVG } from './render/svg';
-import { State } from './state';
+import { paperDimensions, State } from './state';
 import { buildControls } from './ui/controls';
 import { initDropzone } from './ui/dropzone';
 
@@ -44,13 +44,16 @@ function activeProfile(): PlotProfile {
   return state.getPlot().profileName === 'single-pen' ? SINGLE_PEN : GRAY_INKS;
 }
 
-function plotPreview(): PlotPreview | null {
-  const plot = state.getPlot();
-  if (!plot.preview) return null;
-  return { profile: activeProfile(), pageWidthMm: plot.pageWidthMm, marginMm: plot.marginMm };
+function page(): PageGeometry {
+  const { widthMm, heightMm } = paperDimensions(state.getPlot());
+  return { widthMm, heightMm, marginMm: state.getPlot().marginMm };
 }
 
-const rerender = () => renderer.render(state.get(), plotPreview());
+function previewProfile(): PlotProfile | null {
+  return state.getPlot().preview ? activeProfile() : null;
+}
+
+const rerender = () => renderer.render(state.get(), page(), previewProfile());
 state.subscribe(rerender);
 
 async function loadFile(file: File): Promise<void> {
@@ -80,8 +83,10 @@ buildControls(controlsRoot, state, {
     if (!layout) return;
     const plot = state.getPlot();
     const profile = activeProfile();
+    const { widthMm, heightMm } = paperDimensions(plot);
     const svg = toPlotSVG(layout.glyphs, renderer.lastWidth, renderer.lastHeight, {
-      widthMm: plot.pageWidthMm,
+      widthMm,
+      heightMm,
       profile,
       marginMm: plot.marginMm,
     });

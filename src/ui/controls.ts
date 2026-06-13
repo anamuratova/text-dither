@@ -126,23 +126,60 @@ function buildPlotterSection(root: HTMLElement, state: State, actions: ControlAc
   );
   root.appendChild(field('profile', select));
 
-  for (const def of [
-    { key: 'pageWidthMm' as const, label: 'page width mm', min: 100, max: 841, id: 'plot-width' },
-    { key: 'marginMm' as const, label: 'margin mm', min: 0, max: 100, id: 'plot-margin' },
-  ]) {
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.id = def.id;
-    input.min = String(def.min);
-    input.max = String(def.max);
-    input.value = String(plot[def.key]);
-    input.addEventListener('change', () => {
-      const v = Math.min(def.max, Math.max(def.min, Number(input.value) || def.min));
-      input.value = String(v);
-      state.setPlot({ [def.key]: v });
-    });
-    root.appendChild(field(def.label, input));
+  const paperSelect = document.createElement('select');
+  paperSelect.id = 'plot-paper';
+  for (const size of ['A4', 'A3', 'A2', 'A1', 'custom'] as const) {
+    const opt = document.createElement('option');
+    opt.value = size;
+    opt.textContent = size;
+    paperSelect.appendChild(opt);
   }
+  paperSelect.value = plot.paperSize;
+  root.appendChild(field('paper size', paperSelect));
+
+  const orientSelect = document.createElement('select');
+  orientSelect.id = 'plot-orientation';
+  for (const o of ['portrait', 'landscape'] as const) {
+    const opt = document.createElement('option');
+    opt.value = o;
+    opt.textContent = o;
+    orientSelect.appendChild(opt);
+  }
+  orientSelect.value = plot.orientation;
+  orientSelect.addEventListener('change', () =>
+    state.setPlot({ orientation: orientSelect.value as 'portrait' | 'landscape' }),
+  );
+  const orientField = field('orientation', orientSelect);
+  root.appendChild(orientField);
+
+  const customW = numberInput('plot-custom-w', plot.customWidthMm, 10, 2000, (v) =>
+    state.setPlot({ customWidthMm: v }),
+  );
+  const customH = numberInput('plot-custom-h', plot.customHeightMm, 10, 2000, (v) =>
+    state.setPlot({ customHeightMm: v }),
+  );
+  const customWField = field('custom width mm', customW);
+  const customHField = field('custom height mm', customH);
+  root.append(customWField, customHField);
+
+  // orientation applies only to presets; custom uses its literal dimensions
+  const syncPaperInputs = () => {
+    const custom = paperSelect.value === 'custom';
+    orientSelect.disabled = custom;
+    orientField.style.opacity = custom ? '0.4' : '1';
+    customW.disabled = !custom;
+    customH.disabled = !custom;
+    customWField.style.opacity = custom ? '1' : '0.4';
+    customHField.style.opacity = custom ? '1' : '0.4';
+  };
+  paperSelect.addEventListener('change', () => {
+    state.setPlot({ paperSize: paperSelect.value as typeof plot.paperSize });
+    syncPaperInputs();
+  });
+  syncPaperInputs();
+
+  const margin = numberInput('plot-margin', plot.marginMm, 0, 100, (v) => state.setPlot({ marginMm: v }));
+  root.appendChild(field('margin mm', margin));
 
   const previewInput = document.createElement('input');
   previewInput.type = 'checkbox';
@@ -173,6 +210,27 @@ function field(labelText: string, control: HTMLElement): HTMLElement {
   label.textContent = labelText;
   wrap.append(label, control);
   return wrap;
+}
+
+function numberInput(
+  id: string,
+  value: number,
+  min: number,
+  max: number,
+  onChange: (v: number) => void,
+): HTMLInputElement {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.id = id;
+  input.min = String(min);
+  input.max = String(max);
+  input.value = String(value);
+  input.addEventListener('change', () => {
+    const v = Math.min(max, Math.max(min, Number(input.value) || min));
+    input.value = String(v);
+    onChange(v);
+  });
+  return input;
 }
 
 function button(text: string, id: string, onClick: () => void): HTMLButtonElement {

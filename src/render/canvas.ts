@@ -2,16 +2,18 @@ import { computeLayout } from '../core/layout';
 import { luminanceGrid } from '../core/sampler';
 import type { DitherParams, LayoutResult } from '../core/types';
 import { bandFor, type PlotProfile } from '../plot/bands';
-import { printableWidthMm } from '../plot/plotSvg';
+import { printableMm } from '../plot/plotSvg';
 import { glyphStrokes } from '../plot/strokes';
 
 const BG = '#f4f2ec';
 const INK = '#15151a';
 const MAX_LONG_SIDE = 1600;
 
-export interface PlotPreview {
-  profile: PlotProfile;
-  pageWidthMm: number;
+// The page the image is rendered onto (paper minus margins is the drawable
+// area); the canvas takes the paper aspect and the image cover-fills it.
+export interface PageGeometry {
+  widthMm: number;
+  heightMm: number;
   marginMm: number;
 }
 
@@ -34,7 +36,8 @@ export class CanvasRenderer {
   private ctx: CanvasRenderingContext2D;
   private source: ImageSource | null = null;
   private params: DitherParams | null = null;
-  private plotPreview: PlotPreview | null = null;
+  private page: PageGeometry = { widthMm: 210, heightMm: 297, marginMm: 10 };
+  private previewProfile: PlotProfile | null = null;
   private rafId = 0;
   lastLayout: LayoutResult | null = null;
   lastWidth = 0;
@@ -52,9 +55,10 @@ export class CanvasRenderer {
   }
 
   // Coalesce all render requests into a single requestAnimationFrame.
-  render(params: DitherParams, plotPreview: PlotPreview | null = null): void {
+  render(params: DitherParams, page: PageGeometry, previewProfile: PlotProfile | null = null): void {
     this.params = params;
-    this.plotPreview = plotPreview;
+    this.page = page;
+    this.previewProfile = previewProfile;
     if (this.rafId) return;
     this.rafId = requestAnimationFrame(() => {
       this.rafId = 0;
@@ -68,9 +72,26 @@ export class CanvasRenderer {
     if (!source || !params) return;
     await ensureFont();
 
-    const displayW = this.canvas.clientWidth || 640;
-    const aspect = source.height / source.width;
-    const displayH = displayW * aspect;
+    // The drawable page is the paper minus its margins; the canvas takes that
+    // aspect so the image cover-fills the paper (sampler crops the overflow).
+    const printW = printableMm(this.page.widthMm, this.page.marginMm);
+    const printH = printableMm(this.page.heightMm, this.page.marginMm);
+    const paperAspect = printH / printW;
+
+    // Fit the page inside the container in BOTH axes so portrait sheets do not
+    // overflow; drive the canvas display size explicitly (no width:100% loop).
+    const host = this.canvas.parentElement;
+    let availW = 640;
+    let availH = 640;
+    if (host) {
+      const cs = getComputedStyle(host);
+      availW = Math.max(1, host.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+      availH = Math.max(1, host.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom));
+    }
+    const displayW = Math.min(availW, availH / paperAspect);
+    const displayH = displayW * paperAspect;
+    this.canvas.style.width = `${displayW}px`;
+    this.canvas.style.height = `${displayH}px`;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let width = displayW * dpr;
@@ -104,8 +125,8 @@ export class CanvasRenderer {
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, width, height);
 
-    if (this.plotPreview) {
-      this.drawPlotPreview(layout, width);
+    if (this.previewProfile) {
+      this.drawPlotPreview(layout, width / printW, this.previewProfile);
       this.canvas.dispatchEvent(new CustomEvent('rendered'));
       return;
     }
@@ -159,9 +180,7 @@ export class CanvasRenderer {
 
   // Band-model preview: same glyphStrokes geometry the plot SVG exports -
   // single source of truth, what's on screen is what plots.
-  private drawPlotPreview(layout: LayoutResult, width: number): void {
-    const { profile, pageWidthMm, marginMm } = this.plotPreview!;
-    const pxPerMm = width / printableWidthMm(pageWidthMm, marginMm);
+  private drawPlotPreview(layout: LayoutResult, pxPerMm: number, profile: PlotProfile): void {
     const ctx = this.ctx;
     ctx.lineWidth = profile.penWidthMm * pxPerMm;
     ctx.lineCap = 'round';

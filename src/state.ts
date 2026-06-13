@@ -1,19 +1,44 @@
 import type { DitherParams } from './core/types';
 import { DEFAULT_PARAMS } from './core/types';
 
+export type PaperSize = 'A4' | 'A3' | 'A2' | 'A1' | 'custom';
+export type Orientation = 'portrait' | 'landscape';
+
 export interface PlotSettings {
   profileName: 'gray-inks' | 'single-pen';
-  pageWidthMm: number;   // 100..841
+  paperSize: PaperSize;
+  orientation: Orientation;
+  customWidthMm: number;
+  customHeightMm: number;
   marginMm: number;
   preview: boolean;
 }
 
 export const DEFAULT_PLOT: PlotSettings = {
   profileName: 'gray-inks',
-  pageWidthMm: 297,
+  paperSize: 'A4',
+  orientation: 'portrait',
+  customWidthMm: 297,
+  customHeightMm: 210,
   marginMm: 10,
   preview: false,
 };
+
+// ISO A-series portrait dimensions in mm.
+const A_SERIES: Record<Exclude<PaperSize, 'custom'>, [number, number]> = {
+  A4: [210, 297],
+  A3: [297, 420],
+  A2: [420, 594],
+  A1: [594, 841],
+};
+
+export function paperDimensions(s: PlotSettings): { widthMm: number; heightMm: number } {
+  if (s.paperSize === 'custom') {
+    return { widthMm: s.customWidthMm, heightMm: s.customHeightMm };
+  }
+  const [w, h] = A_SERIES[s.paperSize];
+  return s.orientation === 'landscape' ? { widthMm: h, heightMm: w } : { widthMm: w, heightMm: h };
+}
 
 type Listener = () => void;
 

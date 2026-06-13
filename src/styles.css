@@ -154,9 +154,7 @@ button:hover {
 }
 
 #stage {
-  width: 100%;
-  max-width: 960px;
-  height: auto;
+  /* size is driven by the renderer to fit the paper aspect into this column */
   background: #f4f2ec;
   box-shadow: 0 2px 24px rgba(21, 21, 26, 0.18);
 }

@@ -134,6 +134,30 @@ test('plot-10. plot preview toggle changes pixels and restores on toggle back', 
   await expect.poll(() => pixelHash(page), { timeout: 10_000 }).toBe(original);
 });
 
+test('plot-11. selecting a paper size reshapes the canvas and the plot page', async ({ page }) => {
+  await waitForPaint(page);
+  await page.selectOption('#plot-paper', 'A3');
+  await page.selectOption('#plot-orientation', 'portrait');
+  // canvas internal aspect now matches A3 printable area (297-20):(420-20) = 0.6925
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const c = document.querySelector<HTMLCanvasElement>('#stage')!;
+        return c.width / c.height;
+      }),
+    )
+    .toBeCloseTo((297 - 20) / (420 - 20), 2);
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.click('#btn-plot-svg');
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(chunk as Buffer);
+  const content = Buffer.concat(chunks).toString('utf8');
+  expect(content).toMatch(/ width="297mm" height="420mm"/);
+});
+
 test('14. typing new text updates the canvas within 500 ms', async ({ page }) => {
   await waitForPaint(page);
   const before = await pixelHash(page);

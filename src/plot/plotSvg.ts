@@ -5,6 +5,7 @@ import { glyphStrokes } from './strokes';
 
 export interface PlotOptions {
   widthMm: number;
+  heightMm: number;
   profile: PlotProfile;
   marginMm: number;          // default 10
   debugIndices?: boolean;    // data-i on each glyph's first path (tests only)
@@ -16,17 +17,16 @@ function mm(v: number): string {
   return String(r === 0 ? 0 : r);
 }
 
-// Printable width is floored at 1 mm so a margin >= half the page width can
-// never flip or blow up the px->mm mapping.
-export function printableWidthMm(widthMm: number, marginMm: number): number {
-  return Math.max(1, widthMm - 2 * marginMm);
+// Printable extent (either axis) is floored at 1 mm so a margin >= half the
+// page dimension can never flip or blow up the px->mm mapping.
+export function printableMm(dimMm: number, marginMm: number): number {
+  return Math.max(1, dimMm - 2 * marginMm);
 }
 
-export function toPlotSVG(glyphs: Glyph[], canvasW: number, canvasH: number, opts: PlotOptions): string {
+export function toPlotSVG(glyphs: Glyph[], canvasW: number, _canvasH: number, opts: PlotOptions): string {
   const marginMm = opts.marginMm ?? 10;
-  const { profile, widthMm, debugIndices } = opts;
-  const pxPerMm = canvasW / printableWidthMm(widthMm, marginMm);
-  const heightMm = canvasH / pxPerMm + 2 * marginMm;
+  const { profile, widthMm, heightMm, debugIndices } = opts;
+  const pxPerMm = canvasW / printableMm(widthMm, marginMm);
 
   // bucket glyphs by band, preserving layout order within each layer
   const perBand = new Map<Band, Array<{ strokes: Polyline[]; idx: number }>>();

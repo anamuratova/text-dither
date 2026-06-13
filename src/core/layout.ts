@@ -39,12 +39,16 @@ export function computeLayout(
     return { glyphs: [], cols, rows, consumed: 0 };
   }
 
-  const { repeat, invert, gamma, sizeResponse, weightResponse, fadeFloor, warp, whiteCutoff } = params;
+  const { repeat, invert, brightness, contrast, gamma, sizeResponse, weightResponse, fadeFloor, warp, whiteCutoff } =
+    params;
 
-  // first pass: raw darkness for every cell, then optional auto-levels remap
+  // first pass: raw darkness for every cell, then optional auto-levels remap.
+  // brightness/contrast adjust the image luminance (around mid-gray) before
+  // invert and the gamma tone curve.
   const darks = new Float32Array(cols * rows);
   for (let p = 0; p < darks.length; p++) {
-    const lum01 = invert ? 1 - lum[p] : lum[p];
+    const v = clamp((lum[p] - 0.5) * contrast + 0.5 + brightness, 0, 1);
+    const lum01 = invert ? 1 - v : v;
     darks[p] = clamp(1 - lum01, 0, 1) ** gamma;
   }
   if (params.normalize) {

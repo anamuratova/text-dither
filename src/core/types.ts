@@ -3,6 +3,8 @@ export interface DitherParams {
   repeat: boolean;        // default true
   invert: boolean;        // default false
   cellPx: number;         // 7..30, default 13 (display px; renderer multiplies by dpr)
+  brightness: number;     // -1..1, default 0; additive luminance offset
+  contrast: number;       // 0..2, default 1; luminance gain around mid-gray
   gamma: number;          // 0.4..3, default 1.4
   sizeResponse: number;   // 0..1, default 0.7
   weightResponse: number; // 0..1, default 1
@@ -34,6 +36,8 @@ export const DEFAULT_PARAMS: DitherParams = {
   repeat: true,
   invert: false,
   cellPx: 13,
+  brightness: 0,
+  contrast: 1,
   gamma: 1.4,
   sizeResponse: 0.7,
   weightResponse: 1,

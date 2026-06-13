@@ -80,7 +80,7 @@ describe('toPlotSVG', () => {
     const lum = new Float32Array(cols * rows);
     for (let p = 0; p < lum.length; p++) lum[p] = p / (lum.length - 1);
     const params: DitherParams = {
-      text: 'abcdefghij', repeat: true, invert: false, cellPx: 13, gamma: 1.4,
+      text: 'abcdefghij', repeat: true, invert: false, cellPx: 13, brightness: 0, contrast: 1, gamma: 1.4,
       sizeResponse: 0.7, weightResponse: 1, fadeFloor: 0.14, warp: 0.15,
       whiteCutoff: 0, normalize: false,
     };
@@ -145,7 +145,7 @@ describe('toPlotSVG', () => {
     const lum = new Float32Array(cols * rows);
     for (let p = 0; p < lum.length; p++) lum[p] = (p % 7) / 8;
     const params: DitherParams = {
-      text: 'order is immutable', repeat: true, invert: false, cellPx: 13, gamma: 1.4,
+      text: 'order is immutable', repeat: true, invert: false, cellPx: 13, brightness: 0, contrast: 1, gamma: 1.4,
       sizeResponse: 0.7, weightResponse: 1, fadeFloor: 0.14, warp: 0, whiteCutoff: 0, normalize: false,
     };
     const res = computeLayout(lum, cols, rows, 496, 400, params);

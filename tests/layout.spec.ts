@@ -7,6 +7,8 @@ const BASE: DitherParams = {
   repeat: false,
   invert: false,
   cellPx: 13,
+  brightness: 0,
+  contrast: 1,
   gamma: 1.4,
   sizeResponse: 0.7,
   weightResponse: 1,
@@ -173,5 +175,52 @@ describe('auto-levels (addendum section 16)', () => {
     // whiteCutoff=0 every cell is consumed but none is drawn
     expect(res.consumed).toBe(16);
     expect(res.glyphs.length).toBe(0);
+  });
+});
+
+describe('brightness / contrast', () => {
+  const single = (lumVal: number, over: Partial<DitherParams>) =>
+    computeLayout(grid(1, 1, lumVal), 1, 1, 62, 100, {
+      ...BASE,
+      text: 'a',
+      repeat: true,
+      warp: 0,
+      normalize: false,
+      ...over,
+    }).glyphs[0];
+
+  it('defaults (brightness 0, contrast 1) are identity on darkness', () => {
+    expect(single(0.3, {}).dark).toBeCloseTo(0.7 ** 1.4, 6);
+  });
+
+  it('raising brightness lightens the image -> less darkness', () => {
+    const base = single(0.4, {}).dark;
+    expect(single(0.4, { brightness: 0.3 }).dark).toBeLessThan(base);
+    expect(single(0.4, { brightness: -0.3 }).dark).toBeGreaterThan(base);
+  });
+
+  it('raising contrast pushes a dark cell darker and a light cell lighter', () => {
+    // whiteCutoff -1 keeps the light cell from being dropped so darkness is comparable
+    const darkBase = single(0.2, { whiteCutoff: -1 }).dark;
+    const darkHi = single(0.2, { contrast: 1.8, whiteCutoff: -1 }).dark;
+    expect(darkHi).toBeGreaterThan(darkBase); // below mid-gray -> darker
+
+    const lightBase = single(0.8, { whiteCutoff: -1 }).dark;
+    const lightHi = single(0.8, { contrast: 1.8, whiteCutoff: -1 }).dark;
+    expect(lightHi).toBeLessThan(lightBase); // above mid-gray -> lighter
+  });
+
+  it('clamps: extreme settings keep darkness within [0, 1]', () => {
+    for (const lumVal of [0, 0.5, 1]) {
+      for (const brightness of [-1, 1]) {
+        for (const contrast of [0, 2]) {
+          const g = single(lumVal, { brightness, contrast, whiteCutoff: -1 });
+          if (g) {
+            expect(g.dark).toBeGreaterThanOrEqual(0);
+            expect(g.dark).toBeLessThanOrEqual(1);
+          }
+        }
+      }
+    }
   });
 });

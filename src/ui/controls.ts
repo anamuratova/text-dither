@@ -19,6 +19,8 @@ interface SliderDef {
 
 const SLIDERS: SliderDef[] = [
   { key: 'cellPx', label: 'cell size', min: 7, max: 30, step: 1 },
+  { key: 'brightness', label: 'brightness', min: -1, max: 1, step: 0.01 },
+  { key: 'contrast', label: 'contrast', min: 0, max: 2, step: 0.01 },
   { key: 'gamma', label: 'gamma', min: 0.4, max: 3, step: 0.01 },
   { key: 'sizeResponse', label: 'size response', min: 0, max: 1, step: 0.01 },
   { key: 'weightResponse', label: 'weight response', min: 0, max: 1, step: 0.01 },

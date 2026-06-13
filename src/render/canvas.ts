@@ -113,22 +113,48 @@ export class CanvasRenderer {
     ctx.fillStyle = INK;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    this.drawGlyphs(ctx, layout.glyphs);
+    this.canvas.dispatchEvent(new CustomEvent('rendered'));
+  }
 
-    for (const g of layout.glyphs) {
-      ctx.font = `${g.weight} ${g.fontSize}px InterVariable`;
-      ctx.globalAlpha = g.alpha;
-      if (g.rot !== 0) {
-        ctx.save();
-        ctx.translate(g.x, g.y);
-        ctx.rotate(g.rot);
-        ctx.fillText(g.ch, 0, 0);
-        ctx.restore();
-      } else {
-        ctx.fillText(g.ch, g.x, g.y);
+  // Setting ctx.font reparses the font on every assignment, so glyphs are
+  // grouped by a quantized font string and the font is set once per group
+  // (all marks are the same ink color, and same-color source-over compositing
+  // is order-independent, so regrouping does not change the result). Rotation
+  // uses setTransform instead of save/translate/rotate/restore to skip the
+  // state-stack push/pop, which dominated the loop at high glyph counts.
+  private drawGlyphs(ctx: CanvasRenderingContext2D, glyphs: LayoutResult['glyphs']): void {
+    const groups = new Map<string, LayoutResult['glyphs']>();
+    for (const g of glyphs) {
+      const size = Math.round(g.fontSize * 2) / 2;
+      const weight = Math.round(g.weight / 10) * 10;
+      const font = `${weight} ${size}px InterVariable`;
+      let arr = groups.get(font);
+      if (!arr) groups.set(font, (arr = []));
+      arr.push(g);
+    }
+    let identity = true;
+    for (const [font, gs] of groups) {
+      ctx.font = font;
+      for (const g of gs) {
+        ctx.globalAlpha = g.alpha;
+        if (g.rot !== 0) {
+          const cos = Math.cos(g.rot);
+          const sin = Math.sin(g.rot);
+          ctx.setTransform(cos, sin, -sin, cos, g.x, g.y);
+          ctx.fillText(g.ch, 0, 0);
+          identity = false;
+        } else {
+          if (!identity) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            identity = true;
+          }
+          ctx.fillText(g.ch, g.x, g.y);
+        }
       }
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
-    this.canvas.dispatchEvent(new CustomEvent('rendered'));
   }
 
   // Band-model preview: same glyphStrokes geometry the plot SVG exports -
